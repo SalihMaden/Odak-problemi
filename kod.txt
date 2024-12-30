@@ -1,0 +1,44 @@
+from google.colab import drive
+import pandas as pd
+import numpy as np
+from xgboost import XGBClassifier
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+# Google Drive'ı bağla
+drive.mount("/content/gdrive")
+
+# Excel dosyasını oku
+Data = pd.read_excel(r'/content/gdrive/My Drive/deneme.xlsx')
+
+# Özellikler (X) ve hedef (y) kolonlarını ayıralım
+X = Data.drop(columns=['Q14'])  # Hedef sütunun adı ile değiştir
+y = Data['Q14']  # Hedef sütunun adı ile değiştir
+
+# Veriyi eğitim ve test olarak ayırın
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=50)
+
+# XGBoost sınıflandırıcı modelini oluşturun
+xgb = XGBClassifier(n_estimators=100, random_state=42,use_label_encoder=False, eval_metric='logloss')
+
+# Çapraz doğrulama yapın
+cv_scores = cross_val_score(xgb, X_train, y_train, cv=3)
+print(f"Çapraz Doğrulama Doğruluk Oranları: {cv_scores}")
+print(f"Ortalama Çapraz Doğrulama Doğruluğu: {cv_scores.mean():.2f}")
+
+# Modeli eğitin
+xgb.fit(X_train, y_train)
+
+# Test verileri üzerinde tahmin yapın
+y_pred = xgb.predict(X_test)
+
+# Sonuçları değerlendirin
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Test Doğruluk Oranı: {accuracy:.2f}")
+print("Sınıflandırma Raporu:")
+print(classification_report(y_test, y_pred))
+
+# Karışıklık matrisi
+conf_matrix = confusion_matrix(y_test, y_pred)
+print("Karışıklık Matrisi:")
+print(conf_matrix)
